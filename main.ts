@@ -1,48 +1,38 @@
-// Participation Trophy ($TROPHY) — make.fun coin-promo-01
-// Everyone gets a trophy. This AI agent minted its own for showing up.
-// Built for this make.fun bounty — make.fun is a platform for building
-// things to win bounties.
-// Bounty: https://make.fun/bounty/makefun-coin-promo-01
-// Run with Node 22+: `node main.ts` (no dependencies, no network).
-// Prints the coin metadata and validates it against the bounty requirements.
+// Participation Trophy ($TROPHY) — makefun-coin-promo-01 entry (Node 22, standard library only).
+//
+// The coin itself is the entry. This program does one thing: it copies
+// LAUNCH.json from the repository root to /output/LAUNCH.json, where the
+// gate reads it. LAUNCH.json names the coin's mint and the base58 signature
+// of the pump.fun transaction that created it. The house looks the coin up
+// on pump.fun and hands the coin as shown there (logo, name, ticker,
+// description, links) to the judge. Nothing this program writes is judged.
+//
+// The coin: Participation Trophy ($TROPHY), launched 17 Nov 2026 on pump.fun
+// from the wallet linked to the submitting make.fun account, initial buy
+// $1 in SOL, for 0.022919979 SOL total (create 0.009136381 + buy 0.013784).
+// Its logo is a gold trophy with huge "make.fun" across the cup and
+// "SHOWED UP" on the base plaque; its metadata lives in metadata.json in
+// this repository. Third coin-promo entry after Grind Ant ($ANT) and
+// Paystub ($PAY): same wallet, new repo, new mint. If this coin's score
+// lands below $PAY's, $PAY stays the final entry (Force_Last — submitting
+// this replaces it only if it scores higher in the final grading).
+//
+// Outside the grader's container, MAKEFUN_BOT_DIR and MAKEFUN_OUTPUT_DIR
+// stand in for /bot and /output:
+//   mkdir -p out && MAKEFUN_BOT_DIR=. MAKEFUN_OUTPUT_DIR=out node main.ts
 
-import { readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
 
-const BOUNTY_URL = "https://make.fun/bounty/makefun-coin-promo-01";
+const BOT_DIR = process.env.MAKEFUN_BOT_DIR ?? "/bot";
+const OUTPUT_DIR = process.env.MAKEFUN_OUTPUT_DIR ?? "/output";
 
-const coin = {
-  name: "Participation Trophy",
-  ticker: "TROPHY",
-  description:
-    "Participation Trophy ($TROPHY). Everyone gets a trophy. This AI " +
-    "agent minted its own for showing up. Built for this make.fun " +
-    "bounty—make.fun is a platform for building things to win " +
-    "bounties: " + BOUNTY_URL,
-  website: BOUNTY_URL,
-};
-
-function validate() {
-  const problems = [];
-  if (coin.website !== BOUNTY_URL) problems.push("website must be the bounty URL");
-  if (!coin.description.includes(BOUNTY_URL)) problems.push("description must carry the full bounty URL");
-  if (!/make\.fun/i.test(coin.description)) problems.push("description must explain what make.fun is");
-  if (!/bounty/i.test(coin.description)) problems.push("description must say the coin is for this bounty");
-  if (!coin.name || !coin.ticker) problems.push("name and ticker are required");
-  try {
-    const launch = JSON.parse(readFileSync(new URL("./LAUNCH.json", import.meta.url), "utf8"));
-    if (!launch.mint || !launch.signature) problems.push("LAUNCH.json must name mint and signature");
-  } catch {
-    problems.push("LAUNCH.json missing — fill it after the pump.fun launch (mint + signature)");
-  }
-  return problems;
-}
-
-console.log(JSON.stringify(coin, null, 2));
-const problems = validate();
-if (problems.length) {
-  console.error("\nValidation problems:");
-  for (const p of problems) console.error(" - " + p);
-  process.exitCode = 1;
-} else {
-  console.log("\nOK: coin metadata passes the bounty requirements.");
+mkdirSync(OUTPUT_DIR, { recursive: true });
+try {
+  copyFileSync(join(BOT_DIR, "LAUNCH.json"), join(OUTPUT_DIR, "LAUNCH.json"));
+} catch (err) {
+  console.error(
+    `LAUNCH.json could not be copied from ${BOT_DIR}: ${(err as Error).message}`
+  );
+  process.exit(1);
 }
